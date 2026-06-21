@@ -1,0 +1,10 @@
+.venv
+.env
+__pycache__/
+*.pyc
+# AWS credentials file
+.aws/credentials
+backend.hcl
+terraform.tfstate
+.terraform
+.terraform.lock.hcl
