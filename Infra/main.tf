@@ -24,6 +24,7 @@ resource "aws_bedrock_inference_profile" "bedrock_inference_profile" {
 
   tags = {
     ProjectID = "Basic Model for Learning Bedrock"
+    Name = "Bedrock-Nova"
   }
 }
 
