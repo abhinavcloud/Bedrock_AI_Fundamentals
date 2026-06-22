@@ -471,7 +471,7 @@ resource "aws_iam_role_policy_attachment" "attach_lambda_execution_role" {
 # Package the Lambda function code
 data "archive_file" "lambda_bedrock_invocation_code" {
   type        = "zip"
-  source_file = "${path.module}/../Code/lambda/kb_processing.py"
+  source_file = "${path.module}/../Code/lambda_kb_processing"
   output_path = "${path.module}/lambda/function.zip"
 }
 
