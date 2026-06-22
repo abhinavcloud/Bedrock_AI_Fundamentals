@@ -220,7 +220,7 @@ data "aws_iam_policy_document" "kb_trust_policy" {
       type        = "Service"
       identifiers = ["bedrock.amazonaws.com"]
     }
-    
+
     condition {
       test     = "StringEquals"
       variable = "aws:SourceAccount"
@@ -438,11 +438,11 @@ data "aws_iam_policy_document" "lambda_execution_policy_document" {
       "bedrock:GetIngestionJob",
       "bedrock:ListIngestionJobs",
     ]
-    resources = [aws_bedrockagent_knowledge_base.kb.arn,"${aws_bedrockagent_knowledge_base.kb.arn}/data-source/*"]
+    resources = [aws_bedrockagent_knowledge_base.kb.arn, "${aws_bedrockagent_knowledge_base.kb.arn}/data-source/*"]
   }
 
   statement {
-    sid = "CloudWatchLogs"
+    sid    = "CloudWatchLogs"
     effect = "Allow"
     actions = [
       "logs:CreateLogGroup",
@@ -484,18 +484,18 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
   code_sha256   = data.archive_file.lambda_bedrock_invocation_code.output_base64sha256
 
   runtime = "python3.13"
-  
+
   timeout     = 30
   memory_size = 256
 
 
   environment {
     variables = {
-      ENVIRONMENT = "production"
-      LOG_LEVEL   = "info"
-      KNOWLEDGE_BASE_ID = aws_bedrockagent_knowledge_base.kb.id
-      DATA_SOURCE_ID = aws_bedrockagent_data_source.bedrock_data_source.data_source_id
-      REGION = data.aws_region.current
+      ENVIRONMENT       = "production"
+      LOG_LEVEL         = "info"
+      KNOWLEDGE_BASE_ID = "${aws_bedrockagent_knowledge_base.kb.id}"
+      DATA_SOURCE_ID    = "${aws_bedrockagent_data_source.bedrock_data_source.data_source_id}"
+      REGION            = "${data.aws_region.current.region}"
     }
   }
 
