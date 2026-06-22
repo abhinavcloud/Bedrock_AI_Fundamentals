@@ -171,8 +171,8 @@ resource "aws_bedrock_guardrail_version" "bedrock_guardrail_version" {
 ## Creating the infrastructure for Bedrock Knowledge Base using Terraform
 
 # Step 1: Creating Source S3 Bucket for Bedrock Knowledge Base
-resource "aws_s3_bucket" "bedrock_knowledge_base" {
-  bucket = "bedrock-knowledge-base"
+resource "aws_s3_bucket" "bedrock_s3bucket" {
+  bucket = "bedrock-s3bucket-${data.aws_caller_identity.current.account_id}"
 
   tags = {
     Name        = "Bedrock Knowledge Base"
@@ -180,20 +180,12 @@ resource "aws_s3_bucket" "bedrock_knowledge_base" {
   }
 }
 
-resource "aws_s3_bucket_ownership_controls" "bedrock_knowledge_base_ownership" {
-  bucket = aws_s3_bucket.bedrock_knowledge_base.id
+resource "aws_s3_bucket_ownership_controls" "bedrock_s3bucket_ownership" {
+  bucket = aws_s3_bucket.bedrock_s3bucket.id
   rule {
     object_ownership = "BucketOwnerPreferred"
   }
 }
-
-resource "aws_s3_bucket_acl" "bedrock_knowledge_base_acl" {
-  depends_on = [aws_s3_bucket_ownership_controls.bedrock_knowledge_base_ownership]
-
-  bucket = aws_s3_bucket.bedrock_knowledge_base.id
-  acl    = "private"
-}
-
 
 # Step 2: Creating Knowledge Base IAM Roles to allow Bedrock to access S3 bucket, Invoke Bedrock Inference Profile, and write to S3 Vector Database
 
@@ -204,15 +196,27 @@ data "aws_iam_policy_document" "kb_trust_policy" {
     sid    = "BedrockAssumeRole"
     principals {
       type        = "Service"
-      identifiers = ["ec2.amazonaws.com"]
+      identifiers = ["bedrock.amazonaws.com"]
     }
+    
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:bedrock:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:knowledge-base/*"]
+    }
+
     actions = ["sts:AssumeRole"]
   }
 }
 
 
 resource "aws_iam_role" "kb_role" {
-  name               = "test-role"
+  name               = "kb-role"
   assume_role_policy = data.aws_iam_policy_document.kb_trust_policy.json
 }
 
@@ -225,8 +229,8 @@ data "aws_iam_policy_document" "s3_data_source" {
     sid     = "ReadDataSourceBucket"
     effect  = "Allow"
     actions = ["s3:GetObject", "s3:ListBucket"]
-    resources = [aws_s3_bucket.bedrock_knowledge_base.arn,
-      "${aws_s3_bucket.bedrock_knowledge_base.arn}/*"
+    resources = [aws_s3_bucket.bedrock_s3bucket.arn,
+      "${aws_s3_bucket.bedrock_s3bucket.arn}/*"
     ]
 
     condition {
@@ -262,7 +266,7 @@ data "aws_iam_policy_document" "bedrock_invoke" {
     ]
     resources = [
       # Foundation model (embedding)
-      "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0"
+      "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.titan-embed-text-v2:0"
     ]
   }
 }
@@ -286,12 +290,12 @@ resource "aws_s3vectors_vector_bucket" "kb_s3_vector" {
 }
 
 resource "aws_s3vectors_index" "kb_s3_vector_index" {
-  index_name         = "kb_s3_vector-index"
+  index_name         = "kb-s3-vector-index"
   vector_bucket_name = aws_s3vectors_vector_bucket.kb_s3_vector.vector_bucket_name
 
   data_type       = "float32"
   dimension       = 256
-  distance_metric = "euclidean"
+  distance_metric = "cosine"
 }
 
 
@@ -348,7 +352,7 @@ resource "aws_bedrockagent_knowledge_base" "kb" {
 
   knowledge_base_configuration {
     vector_knowledge_base_configuration {
-      embedding_model_arn = "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.nova-2-multimodal-embeddings-v1:0"
+      embedding_model_arn = "arn:aws:bedrock:${data.aws_region.current.region}::foundation-model/amazon.titan-embed-text-v2:0"
       embedding_model_configuration {
         bedrock_embedding_model_configuration {
           dimensions          = 256
@@ -368,11 +372,135 @@ resource "aws_bedrockagent_knowledge_base" "kb" {
 }
 
 
-# Step 4: Creating Data Source for S3 Bucket to get the ARN for Bedrock Knowledge Base creation
+# Step 5: Creating Data Source to map S3 Bucket and Bedrock
+resource "aws_bedrockagent_data_source" "bedrock_data_source" {
+  knowledge_base_id = aws_bedrockagent_knowledge_base.kb.id
+  name              = "bedrock-data-source"
+  data_source_configuration {
+    type = "S3"
+    s3_configuration {
+      bucket_arn = aws_s3_bucket.bedrock_s3bucket.arn
+    }
+  }
+}
+
+
+
 
 # Step 6: Creating Lambda Function to invoke Bedrock Inference Profile with Guardrail and Knowledge Base
+# IAM role for Lambda execution
+data "aws_iam_policy_document" "lambda_trust_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "lambda_execution_role" {
+  name               = "lambda_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_trust_role.json
+}
+
+data "aws_iam_policy_document" "lambda_execution_policy_document" {
+  statement {
+    sid    = "BedrockInvocation"
+    effect = "Allow"
+    actions = [
+      "bedrock:StartIngestionJob",
+      "bedrock:GetIngestionJob",
+      "bedrock:ListIngestionJobs",
+    ]
+    resources = [aws_bedrockagent_knowledge_base.kb.arn,"${aws_bedrockagent_knowledge_base.kb.arn}/data-source/*"]
+  }
+
+  statement {
+    sid = "CloudWatchLogs"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogGroup",
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ]
+    resources = ["*"]
+
+  }
+}
 
 
-# Step 7: Creating Lambda Execution Role to allow Labmbda to Invoke Bedrock Inference Profile and write to cloudwatch logs
+resource "aws_iam_policy" "lambda_execution_policy" {
+  name   = "lambda-execution-policy"
+  policy = data.aws_iam_policy_document.lambda_execution_policy_document.json
+}
+
+resource "aws_iam_role_policy_attachment" "attach_lambda_execution_role" {
+  role       = aws_iam_role.lambda_execution_role.name
+  policy_arn = aws_iam_policy.lambda_execution_policy.arn
+}
 
 
+
+
+# Package the Lambda function code
+data "archive_file" "lambda_bedrock_invocation_code" {
+  type        = "zip"
+  source_file = "${path.module}/lambda/index.js"
+  output_path = "${path.module}/lambda/function.zip"
+}
+
+# Lambda function
+resource "aws_lambda_function" "lambda_bedrock_function" {
+  filename      = data.archive_file.lambda_bedrock_invocation_code.output_path
+  function_name = "lambda_bedrock_function"
+  role          = aws_iam_role.lambda_execution_role.arn
+  handler       = "index.handler"
+  code_sha256   = data.archive_file.lambda_bedrock_invocation_code.output_base64sha256
+
+  runtime = "nodejs24.x"
+
+  environment {
+    variables = {
+      ENVIRONMENT = "production"
+      LOG_LEVEL   = "info"
+      KNOWLEDGE_BASE_ID = aws_bedrockagent_knowledge_base.kb.id
+      DATA_SOURCE_ID = aws_bedrockagent_data_source.bedrock_data_source.data_source_id
+    }
+  }
+
+  tags = {
+    Environment = "production"
+    Application = "Bedrock"
+  }
+}
+
+
+
+# CloudWatch resource
+resource "aws_cloudwatch_log_group" "lambda_bedrock_kb_logs" {
+  name              = "/aws/lambda/${aws_lambda_function.lambda_bedrock_function.function_name}"
+  retention_in_days = 14
+}
+
+
+# Lambda Invocation from S3 bucket notification 
+resource "aws_lambda_permission" "allow_s3" {
+  statement_id  = "AllowS3Invoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_bedrock_function.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = aws_s3_bucket.bedrock_s3bucket.arn
+}
+
+resource "aws_s3_bucket_notification" "bucket_notif" {
+  bucket = aws_s3_bucket.bedrock_s3bucket.id
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.lambda_bedrock_function.arn
+    events              = ["s3:ObjectCreated:*"]
+  }
+  depends_on = [aws_lambda_permission.allow_s3]
+}
