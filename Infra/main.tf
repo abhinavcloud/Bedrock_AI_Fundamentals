@@ -471,8 +471,8 @@ resource "aws_iam_role_policy_attachment" "attach_lambda_execution_role" {
 # Package the Lambda function code
 data "archive_file" "lambda_bedrock_invocation_code" {
   type        = "zip"
-  source_file = "${path.module}/../Code/lambda_kb_processing"
-  output_path = "${path.module}/lambda/function.zip"
+  source_file = "${path.module}/../Code/lambda_kb_processing/app.py"
+  output_path = "${path.module}/..code/lambda_kb_processing/function.zip"
 }
 
 # Lambda function
@@ -480,7 +480,7 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
   filename      = data.archive_file.lambda_bedrock_invocation_code.output_path
   function_name = "lambda_bedrock_function"
   role          = aws_iam_role.lambda_execution_role.arn
-  handler       = "index.handler"
+  handler       = "app.handler"
   code_sha256   = data.archive_file.lambda_bedrock_invocation_code.output_base64sha256
 
   runtime = "python3.13"
@@ -514,9 +514,5 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
 #}
 
 
-# Lambda Invocation 
-#aws lambda invoke \
-#  --function-name lambda_bedrock_function \
-#  --payload '{}' \
-#  response.json
+
 

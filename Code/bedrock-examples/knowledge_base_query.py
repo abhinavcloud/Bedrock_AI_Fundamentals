@@ -63,6 +63,6 @@ def query_knowledge_base(question):
 
 if __name__ == "__main__":
     # User prompt
-    question = "When is spring break this year?"
+    question = "When is spring break this year? Note that the current academic year is 2026-2027. Also tell me when is the last day to withdraw from a course"
 
     query_knowledge_base(question)

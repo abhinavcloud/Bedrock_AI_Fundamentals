@@ -8,3 +8,6 @@ backend.hcl
 terraform.tfstate
 .terraform
 .terraform.lock.hcl
+**.zip
+personal.txt
+response.json

@@ -12,3 +12,7 @@ output "gurardrail_version_number" {
   value       = aws_bedrock_guardrail.bedrock_guardrail.version
   description = "The version number of the Bedrock Guardrail"
 }
+
+output "knowlege_base_id" {
+  value = aws_bedrockagent_knowledge_base.kb.id
+}

@@ -15,6 +15,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+import uuid
 
 import boto3
 from botocore.exceptions import ClientError
@@ -77,7 +78,7 @@ def _is_ingestion_in_progress() -> tuple[bool, str | None]:
 
 def _start_ingestion_job() -> dict:
     """Trigger a new ingestion job. Returns the job summary."""
-    client_token = f"ingest-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    client_token = f"ingest-{uuid.uuid4()}"
 
     try:
         response = bedrock_agent.start_ingestion_job(
