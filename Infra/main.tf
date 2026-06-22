@@ -31,8 +31,8 @@ resource "aws_bedrock_inference_profile" "bedrock_inference_profile" {
 # Creating an AWS Bedrock Guardrail resource using Terraform
 resource "aws_bedrock_guardrail" "bedrock_guardrail" {
   name                      = "bedrock_guardrail"
-  blocked_input_messaging   = "bedrock_guardrail"
-  blocked_outputs_messaging = "bedrock_guardrail"
+  blocked_input_messaging   = "Sorry, I can't help with that question."
+  blocked_outputs_messaging = "Sorry, I can't share that information."
   description               = "bedrock_guardrail"
 
   content_policy_config {
