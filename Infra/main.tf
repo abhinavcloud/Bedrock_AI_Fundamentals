@@ -187,6 +187,28 @@ resource "aws_s3_bucket_ownership_controls" "bedrock_s3bucket_ownership" {
   }
 }
 
+resource "aws_s3_bucket_public_access_block" "bedrock_s3bucket_pab" {
+  bucket                  = aws_s3_bucket.bedrock_s3bucket.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_versioning" "bedrock_s3bucket_versioning" {
+  bucket = aws_s3_bucket.bedrock_s3bucket.id
+  versioning_configuration { status = "Enabled" }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "bedrock_s3bucket_sse" {
+  bucket = aws_s3_bucket.bedrock_s3bucket.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
 # Step 2: Creating Knowledge Base IAM Roles to allow Bedrock to access S3 bucket, Invoke Bedrock Inference Profile, and write to S3 Vector Database
 
 ## Creating Trust Policy for Knowledge Base to assume Role
@@ -449,7 +471,7 @@ resource "aws_iam_role_policy_attachment" "attach_lambda_execution_role" {
 # Package the Lambda function code
 data "archive_file" "lambda_bedrock_invocation_code" {
   type        = "zip"
-  source_file = "${path.module}/lambda/index.js"
+  source_file = "${path.module}/../Code/lambda/kb_processing.py"
   output_path = "${path.module}/lambda/function.zip"
 }
 
@@ -461,7 +483,11 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
   handler       = "index.handler"
   code_sha256   = data.archive_file.lambda_bedrock_invocation_code.output_base64sha256
 
-  runtime = "nodejs24.x"
+  runtime = "python3.13"
+  
+  timeout     = 30
+  memory_size = 256
+
 
   environment {
     variables = {
@@ -469,6 +495,7 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
       LOG_LEVEL   = "info"
       KNOWLEDGE_BASE_ID = aws_bedrockagent_knowledge_base.kb.id
       DATA_SOURCE_ID = aws_bedrockagent_data_source.bedrock_data_source.data_source_id
+      REGION = data.aws_region.current
     }
   }
 
@@ -481,26 +508,15 @@ resource "aws_lambda_function" "lambda_bedrock_function" {
 
 
 # CloudWatch resource
-resource "aws_cloudwatch_log_group" "lambda_bedrock_kb_logs" {
-  name              = "/aws/lambda/${aws_lambda_function.lambda_bedrock_function.function_name}"
-  retention_in_days = 14
-}
+#resource "aws_cloudwatch_log_group" "lambda_bedrock_kb_logs" {
+#  name              = "/aws/lambda/${aws_lambda_function.lambda_bedrock_function.function_name}"
+#  retention_in_days = 14
+#}
 
 
-# Lambda Invocation from S3 bucket notification 
-resource "aws_lambda_permission" "allow_s3" {
-  statement_id  = "AllowS3Invoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.lambda_bedrock_function.function_name
-  principal     = "s3.amazonaws.com"
-  source_arn    = aws_s3_bucket.bedrock_s3bucket.arn
-}
+# Lambda Invocation 
+#aws lambda invoke \
+#  --function-name lambda_bedrock_function \
+#  --payload '{}' \
+#  response.json
 
-resource "aws_s3_bucket_notification" "bucket_notif" {
-  bucket = aws_s3_bucket.bedrock_s3bucket.id
-  lambda_function {
-    lambda_function_arn = aws_lambda_function.lambda_bedrock_function.arn
-    events              = ["s3:ObjectCreated:*"]
-  }
-  depends_on = [aws_lambda_permission.allow_s3]
-}
