@@ -6,22 +6,22 @@
 
 ## 📋 Table of Contents
 
-- [1. Why this Project](#why-this-project)
-- [2. Architecture Overview](#architecture-overview)
-- [3. Component Breakdown](#component-breakdown)
-- [4. Data Flow](#data-flow)
-- [5. Why These Design Choices](#why-these-design-choices)
-- [6. Project Structure](#project-structure)
-- [7. Prerequisites](#prerequisites)
-- [8. Deployment](#deployment)
-- [9. Usage](#usage)
-- [10. Cost Analysis](#cost-analysis)
-- [11. Security & IAM](#security--iam)
-- [12. Troubleshooting](#troubleshooting)
-- [13. Cleanup](#cleanup)
-- [14. Lessons Learned](#lessons-learned)
-- [15. Future Enhancements](#future-enhancements)
-- [16. References](#references)
+- [1. Why this Project](#-why-this-project)
+- [2. Architecture Overview](#-architecture-overview)
+- [3. Component Breakdown](#-component-breakdown)
+- [4. Data Flow](#-data-flow)
+- [5. Why These Design Choices](#-why-these-design-choices)
+- [6. Project Structure](#-project-structure)
+- [7. Prerequisites](#-prerequisites)
+- [8. Deployment](#-deployment)
+- [9. Usage](#-usage)
+- [10. Cost Analysis](#-cost-analysis)
+- [11. Security & IAM](#-security--iam)
+- [12. Troubleshooting](#-troubleshooting)
+- [13. Cleanup](#-cleanup)
+- [14. Lessons Learned](#-lessons-learned)
+- [15. Future Enhancements](#-future-enhancements)
+- [16. References](#-references)
 
 
 ---
