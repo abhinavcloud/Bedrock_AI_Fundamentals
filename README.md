@@ -2,31 +2,27 @@
 
 > **A production-grade Retrieval-Augmented Generation (RAG) pipeline built entirely on AWS managed services — using Amazon Bedrock Knowledge Bases, S3 Vectors (no OpenSearch!), Titan v2 embeddings, Nova Micro inference, and Bedrock Guardrails. Deployed via Terraform. Costs less than $0.01/month at rest.**
 
-https://img.shields.io/badge/Terraform-≥1.10-7B42BC?logo=terraform](https://www.terraform.io/)
-https://img.shields.io/badge/AWS_Provider-≥6.27-FF9900?logo=amazonaws](https://registry.terraform.io/providers/hashicorp/aws/latest)
-https://img.shields.io/badge/Python-3.13-3776AB?logo=python](https://www.python.org/)
-https://img.shields.io/badge/Region-ap--south--1-232F3E?logo=amazonaws](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/)
-
 ---
 
 ## 📋 Table of Contents
 
-- #-why-this-project
-- #-architecture-overview
-- #-component-breakdown
-- #-data-flow
-- #-why-these-design-choices
-- #-project-structure
-- #-prerequisites
-- #-deployment
-- #-usage
-- #-cost-analysis
-- #-security--iam
-- #-troubleshooting
-- #-cleanup
-- #-lessons-learned
-- #-future-enhancements
-- #-references
+- [1. Why this Project](#why-this-project)
+- [2. Architecture Overview](#architecture-overview)
+- [3. Component Breakdown](#component-breakdown)
+- [4. Data Flow](#data-flow)
+- [5. Why These Design Choices](#why-these-design-choices)
+- [6. Project Structure](#project-structure)
+- [7. Prerequisites](#prerequisites)
+- [8. Deployment](#deployment)
+- [9. Usage](#usage)
+- [10. Cost Analysis](#cost-analysis)
+- [11. Security & IAM](#security--iam)
+- [12. Troubleshooting](#troubleshooting)
+- [13. Cleanup](#cleanup)
+- [14. Lessons Learned](#lessons-learned)
+- [15. Future Enhancements](#future-enhancements)
+- [16. References](#references)
+
 
 ---
 
