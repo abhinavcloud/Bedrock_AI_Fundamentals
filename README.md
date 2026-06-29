@@ -1,6 +1,6 @@
 # 🧠 Bedrock AI Fundamentals — Serverless RAG on AWS
 
-> **A production-grade Retrieval-Augmented Generation (RAG) pipeline built entirely on AWS managed services — using Amazon Bedrock Knowledge Bases, S3 Vectors (no OpenSearch!), Titan v2 embeddings, Nova Micro inference, and Bedrock Guardrails. Deployed via Terraform. Costs less than $0.01/month at rest.**
+> **A production grade Retrieval-Augmented Generation (RAG) pipeline built entirely on AWS managed services — using Amazon Bedrock Knowledge Bases, S3 Vectors (no OpenSearch!), Titan v2 embeddings, Nova Micro inference, and Bedrock Guardrails. Deployed via Terraform. Costs less than $0.01/month at rest.**
 
 ---
 
